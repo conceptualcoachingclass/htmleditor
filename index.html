@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Live HTML Editor</title>
+
+<!-- CodeMirror CSS -->
+<link rel="stylesheet"
+ href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+<link rel="stylesheet"
+ href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/material-darker.min.css">
+
+<style>
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #1e1e1e;
+    overflow: hidden;
+}
+
+.editor {
+    height: calc(100vh - 40px);
+    display: flex;
+    padding: 12px;
+    background: #e9edf3;
+}
+
+.code {
+    width: 30%;
+    min-width: 120px;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.CodeMirror {
+    height: 100%;
+    font-size: 16px;
+    background: #fafafa;      /* off white */
+    color: #222;
+}
+
+.CodeMirror-gutters {
+    background: #f0f0f0;
+    border-right: 1px solid #ddd;
+}
+
+.CodeMirror-linenumber {
+    color: #888;
+}
+
+.resizer {
+    width: 6px;
+    margin: 0 10px;
+    cursor: col-resize;
+    background: #444;
+    border-radius: 3px;
+}
+
+.output {
+    flex: 1;
+    padding: 8px;
+    background: #f5f7fa;
+    border-radius: 8px;
+}
+
+iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    background: white;
+    border-radius: 8px;
+}
+
+footer {
+    height: 40px;
+    background: #1e1e1e;
+    color: #eee;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    font-size: 14px;
+}
+
+footer button {
+    padding: 6px 14px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+#saveBtn { background: #4caf50; color: white; }
+#saveBtn:hover { background: #43a047; }
+</style>
+</head>
+
+<body>
+
+<div class="editor">
+    <div class="code">
+        <textarea id="htmlCode"></textarea>
+    </div>
+
+    <div class="resizer" id="resizer"></div>
+
+    <div class="output">
+        <iframe id="preview"></iframe>
+    </div>
+</div>
+
+<footer>
+    © 2026 · Created by Abha Datar. All Rights Reserved.
+    <button id="saveBtn">💾 Save</button>
+</footer>
+
+<!-- CodeMirror JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/xml/xml.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closetag.min.js"></script>
+
+<script>
+/* INIT EDITOR */
+const editor = CodeMirror.fromTextArea(htmlCode, {
+    mode: "text/html",
+
+    lineNumbers: true,
+    autoCloseTags: true
+});
+
+
+const iframe = document.getElementById("preview");
+
+/* AUTO RUN (LIVE PREVIEW) */
+let typingTimer;
+
+function runCode() {
+    iframe.srcdoc = `
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+body { font-family: Arial; padding: 10px; }
+</style>
+</head>
+<body>
+${editor.getValue()}
+</body>
+</html>`;
+}
+
+editor.on("change", () => {
+    clearTimeout(typingTimer);
+    typingTimer = setTimeout(runCode, 300); // debounce
+});
+
+/* FIRST LOAD */
+runCode();
+
+/* FILE SYSTEM ACCESS */
+let folderHandle = null;
+const DEFAULT_INITIALS = "STD";
+
+/* SAVE BUTTON */
+document.getElementById("saveBtn").onclick = async () => {
+    try {
+        if (!folderHandle) {
+            folderHandle = await window.showDirectoryPicker({ mode: "readwrite" });
+            alert("📁 Student work folder selected!");
+        }
+
+        let initials = prompt("Enter initials:", DEFAULT_INITIALS) || DEFAULT_INITIALS;
+
+        const now = new Date();
+        const timestamp = now.toISOString()
+            .replace(/T/, "_")
+            .replace(/:/g, "-")
+            .split(".")[0];
+
+        const fileName = `${initials}_${timestamp}.html`;
+
+        const fileHandle = await folderHandle.getFileHandle(fileName, { create: true });
+        const writable = await fileHandle.createWritable();
+        await writable.write(editor.getValue());
+        await writable.close();
+
+        alert("✅ Saved successfully");
+
+    } catch {
+        alert("❌ Folder access cancelled or not supported");
+    }
+};
+
+/* RESIZER */
+const resizer = document.getElementById("resizer");
+const left = document.querySelector(".code");
+const container = document.querySelector(".editor");
+let dragging = false;
+
+resizer.onpointerdown = e => {
+    dragging = true;
+    resizer.setPointerCapture(e.pointerId);
+};
+
+resizer.onpointermove = e => {
+    if (!dragging) return;
+    const rect = container.getBoundingClientRect();
+    const percent = ((e.clientX - rect.left) / rect.width) * 100;
+    if (percent > 10 && percent < 80) {
+        left.style.width = percent + "%";
+    }
+};
+
+resizer.onpointerup = () => dragging = false;
+</script>
+
+</body>
+</html>
