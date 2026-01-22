@@ -125,9 +125,9 @@ footer button {
 /* INIT EDITOR */
 const editor = CodeMirror.fromTextArea(htmlCode, {
     mode: "text/html",
-
     lineNumbers: true,
-    autoCloseTags: true
+    autoCloseTags: true,
+    lineWrapping: true
 });
 
 
@@ -214,6 +214,18 @@ resizer.onpointermove = e => {
 };
 
 resizer.onpointerup = () => dragging = false;
+ 
+/* DEFAULT HTML TEMPLATE */
+editor.setValue(`<!DOCTYPE html>
+<html>
+  <head>
+    
+  </head>
+  <body>
+    
+  </body>
+</html>`);
+ 
 </script>
 
 </body>
