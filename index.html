@@ -123,110 +123,58 @@ footer button {
 
 <script>
 /* INIT EDITOR */
-const editor = CodeMirror.fromTextArea(htmlCode, {
+const textarea = document.getElementById("htmlCode");
+
+const editor = CodeMirror.fromTextArea(textarea, {
     mode: "text/html",
     lineNumbers: true,
     autoCloseTags: true,
     lineWrapping: true
 });
 
-
-const iframe = document.getElementById("preview");
-
-/* AUTO RUN (LIVE PREVIEW) */
-let typingTimer;
-
-function runCode() {
-    iframe.srcdoc = `
-<!DOCTYPE html>
-<html>
-<head>
-<style>
-body { font-family: Arial; padding: 10px; }
-</style>
-</head>
-<body>
-${editor.getValue()}
-</body>
-</html>`;
-}
-
-editor.on("change", () => {
-    clearTimeout(typingTimer);
-    typingTimer = setTimeout(runCode, 300); // debounce
-});
-
-/* FIRST LOAD */
-runCode();
-
-/* FILE SYSTEM ACCESS */
-let folderHandle = null;
-const DEFAULT_INITIALS = "STD";
-
-/* SAVE BUTTON */
-document.getElementById("saveBtn").onclick = async () => {
-    try {
-        if (!folderHandle) {
-            folderHandle = await window.showDirectoryPicker({ mode: "readwrite" });
-            alert("📁 Student work folder selected!");
-        }
-
-        let initials = prompt("Enter initials:", DEFAULT_INITIALS) || DEFAULT_INITIALS;
-
-        const now = new Date();
-        const timestamp = now.toISOString()
-            .replace(/T/, "_")
-            .replace(/:/g, "-")
-            .split(".")[0];
-
-        const fileName = `${initials}_${timestamp}.html`;
-
-        const fileHandle = await folderHandle.getFileHandle(fileName, { create: true });
-        const writable = await fileHandle.createWritable();
-        await writable.write(editor.getValue());
-        await writable.close();
-
-        alert("✅ Saved successfully");
-
-    } catch {
-        alert("❌ Folder access cancelled or not supported");
-    }
-};
-
-/* RESIZER */
-const resizer = document.getElementById("resizer");
-const left = document.querySelector(".code");
-const container = document.querySelector(".editor");
-let dragging = false;
-
-resizer.onpointerdown = e => {
-    dragging = true;
-    resizer.setPointerCapture(e.pointerId);
-};
-
-resizer.onpointermove = e => {
-    if (!dragging) return;
-    const rect = container.getBoundingClientRect();
-    const percent = ((e.clientX - rect.left) / rect.width) * 100;
-    if (percent > 10 && percent < 80) {
-        left.style.width = percent + "%";
-    }
-};
-
-resizer.onpointerup = () => dragging = false;
- 
 /* DEFAULT HTML TEMPLATE */
 editor.setValue(`<!DOCTYPE html>
-<html>
+<html >
   <head>
     
   </head>
   <body>
-    
+  
   </body>
 </html>`);
- 
+const iframe = document.getElementById("preview");
+
+function updatePreview() {
+    iframe.srcdoc = editor.getValue();
+}
+
+editor.on("change", updatePreview);
+updatePreview();
+
+/* SAVE FILE WITH FILENAME PROMPT */
+document.getElementById("saveBtn").addEventListener("click", () => {
+    let fileName = prompt("Enter file name", "index");
+
+    if (!fileName) return;
+
+    if (!fileName.endsWith(".html")) {
+        fileName += ".html";
+    }
+
+    const content = editor.getValue();
+    const blob = new Blob([content], { type: "text/html" });
+
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = fileName;
+
+    document.body.appendChild(link);
+    link.click();
+
+    document.body.removeChild(link);
+    URL.revokeObjectURL(link.href);
+});
 </script>
 
+
 </body>
-</html>
