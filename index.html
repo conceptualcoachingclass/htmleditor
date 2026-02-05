@@ -112,14 +112,25 @@ footer button {
 </div>
 
 <footer>
+ <footer>
     © 2026 · Created by Abha Datar. All Rights Reserved.
+    <button id="openBtn">📂 Open</button>
     <button id="saveBtn">💾 Save</button>
+</footer>
+
 </footer>
 
 <!-- CodeMirror JS -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/xml/xml.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closetag.min.js"></script>
+
+<input 
+  type="file" 
+  id="fileInput" 
+  accept=".html,text/html" 
+  style="display:none"
+/>
 
 <script>
 /* INIT EDITOR */
@@ -174,7 +185,37 @@ document.getElementById("saveBtn").addEventListener("click", () => {
     document.body.removeChild(link);
     URL.revokeObjectURL(link.href);
 });
+
+/* OPEN HTML FILE */
+const openBtn = document.getElementById("openBtn");
+const fileInput = document.getElementById("fileInput");
+
+openBtn.addEventListener("click", () => {
+    fileInput.click();
+});
+
+fileInput.addEventListener("change", () => {
+    const file = fileInput.files[0];
+    if (!file) return;
+
+    if (!file.name.endsWith(".html")) {
+        alert("Please select an HTML file");
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+        editor.setValue(reader.result);
+        updatePreview();
+    };
+    reader.readAsText(file);
+
+    // Optional: remember filename
+    localStorage.setItem("lastFileName", file.name.replace(".html", ""));
+});
+
 </script>
+
 
 
 </body>
